@@ -1,0 +1,194 @@
+instalar postgres:*****************************************************************************************************************
+
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt-get update
+sudo apt-get -y install postgresql
+sudo apt install postgres
+
+Instalar Composer******************************************************************************************************************
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php -r "if (hash_file('sha384', 'composer-setup.php') === '55ce33d7678c5a611085589f1f3ddf8b3c52d662cd01d4ba75c0ee0459970c2200a51f492d557530c71c15d8dba01eae') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+php composer-setup.php
+php -r "unlink('composer-setup.php');"
+sudo apt install composer
+
+cambiar contraseña a postgres---------------------
+
+sudo -i -u postgres
+psql
+\password
+
+crear base de datos--------------------------------
+
+sudo -i -u postgres
+createdb <nombre>
+
+acceder a base de datos----------------------------
+
+sudo -i -u postgres
+psql <nombre>
+
+crear proyecto laravel-----------------------------
+
+composer create-project laravel/laravel=9.* <nombre> --prefer-dist
+
+Ver datos de una tabla----------------------------
+
+sudo -i -u postgres
+psql <nombre>
+select * from <tabla>;
+
+VSCODE-----------------------------------------------------------------------------------
+Crear Model, migration, factory, seeder, resource, controller----------------------------
+
+php artisan make:model <nombre> -mfsrc  //DIFERENTE DE "USER" PORQUE EXISTE UN MODEL USER
+
+Libreria necesaria-----------------------------------------------------------------------
+
+sudo apt-get install php-mbstring
+sudo service apache2 restart
+
+-----------------------------------------------------------------------------------------
+
+Si la conexion falla con postgres intenta esto:
+
+1-Explorador de archivos
+2-Otras ubicaciones
+3-equipo/etc/php/8.1/apache2
+4-abrir una terminal en esa carpeta (Clic derecho terminal)
+5-sudo nano php.ini
+6-buscar con ctrl+w: pgsql
+7-descomentar: (Quitar el ;)
+ extension=pdo_pgsql
+ extension=pgsql
+8-en terminal, sudo apt-get install php8.1-pgsql
+
+Esperemos que ya deberia de funcionar
+
+Archivos a modificar para hacer una pagina---------------------
+
+1-Crear una base de datos
+2-Modificar los datos en el .env
+3-Hacer el make:model -mfsrc CON INICIAL MAYUSCULA EL NOMBRE DEL MODEL
+4-Agregar los campos en la migracion
+5-Factory, darle funcion que se llenen (Aqui los fake())
+6-Ir a Model, agregar el protected $fillable de los campos creados
+7-Ir al seeder creado y agregar el Factory
+8-Ir al seeder base, y llamar la funcion factory, $this call
+9-Probar que todo funcione con un Migrate:Fresh
+10-Si todo funciona hacer un Migrate:Fresh --seed
+11-Crear las rutas entre el Web.php y el Controller
+
+MODEL--------------------------------------------------------------------------------
+Agregar este codigo:
+
+	protected $fillable = [					Estos nombres son los nombre de los campos en tu bd
+		'Nombre',
+		'Apellido',
+		'Edad',
+	];
+
+FACTORY-------------------------------------------------------------------------------
+agregar dentro de la function definition()
+
+	return[
+		'Nombre' => fake()->name(),
+		'Apellido' => fake()->lastName(),		Deben de ser los mismod nombres que los campos
+		'Edad' => fake()->numberBetween(15,100)
+		];
+
+MIGRATION----------------------------------------------------------------------------
+
+Aqui se agregan los campos que iran en MODEL, FACTORY
+
+SEEDER-------------------------------------------------------------------------------
+
+Agregar el factory en el seeder que creas
+
+\App\Models\Cliente::factory(n)->create();
+
+En el seeder existente llamar a la funcion
+
+$this->call([
+	SeederCreado::class,
+]);
+
+
+AL FUNCIONAR TODO SIGUE CREAR LAS RUTAS EN WEB.PHP
+
+AQUI VAN LAS RUTAS DE LAS VISTAS
+
+Estructura:
+
+Route::controller(ControllerCreado::class)->group(function({
+
+Route::get('/general','funcion')->name('Nombre de la ruta); -> Esta es para una vista general
+Route::get('/general/{especifico}','funcion')->name('nombre de la ruta'); //Vista especifica
+Route::get('/crear', 'funcion')->name(); //Vista de crear
+Route::post('/general' , 'funcion')->name(); //Guardar el creado, el post
+
+});
+
+
+CONTROLLER--------------------------------------------------------------------------------
+
+Para vista GENERAL------------------------------------------------------------------------
+
+$cliente = Cliente::latest()->get()
+return view('general')->with('llave plural, $variable)  //La llave debe de ser el nombre del modelo en plural por ejemplo "clientes"
+
+
+
+Para vista ESPECIFICA----------------------------------------------------------------------
+
+Parametro: Cliente $cliente
+
+return view('especifico')->with('llave singular', $var)
+
+
+
+Para vista de CREAR------------------------------------------------------------------------
+
+return view('create');
+
+
+
+Para STORE --------------------------------------------------------------------------------
+
+Parametro: Request $request
+
+Cliente::create([
+'campo'=>request->campo,
+'campo'=>request->campo,
+'campo'=>request->campo,
+]);
+
+
+
+Para SALUDO---------------------------------------------------------------------------------
+
+Parametro: Cliente $cliente
+
+return view('saludo')->with('cliente')
+
+
+
+MENU EN TODOS LOS VIEWS---------------------------------------------------------------------
+
+Crear un view de Menu
+
+menu.blade.php
+
+
+@section('menu')
+	<a href="{{route('cliente.index')}}">Inicio</a>
+	<a href="{{route('cliente.crear')}}">Crear</a>
+@show
+
+
+En las demas vistas
+
+@extends('menu')
+
+@yield('menu')
